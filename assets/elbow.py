@@ -1,6 +1,6 @@
 # inspired by the source code from
 # www.slideshare.net/SarahGuido/kmeans-clustering-with-scikitlearn
-def my_plot_elbow(X, n=10):
+def plot_elbow(X, n=10):
     import seaborn as sns
     sns.set()
     from matplotlib.pyplot import show, xlabel, ylabel
