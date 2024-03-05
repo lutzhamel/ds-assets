@@ -8,10 +8,12 @@ def classification_confint(acc, n):
       n   -- number of observations used to compute the accuracy
     Returns a tuple (lb,ub)
     '''
+    if acc > 1.0:
+      raise ValueError('Expected an accuracy value between 0 and 1')
     import math
-    # if acc == 100% or acc == 1.0 pertube the acc for the lower
-    # bound so we get something reasonable
-    if acc == 100.0 or acc == 1.0:
+    # if acc == 1.0 pertub the acc for the lower
+    # bound so we get something reasonable in terms of interval
+    if acc == 1.0:
       lbacc = 0.99
     else:
       lbacc = acc
