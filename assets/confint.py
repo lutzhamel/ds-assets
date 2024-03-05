@@ -9,9 +9,14 @@ def classification_confint(acc, n):
     Returns a tuple (lb,ub)
     '''
     import math
-    interval = 1.96*math.sqrt(acc*(1-acc)/n)
-    lb = max(0, acc - interval)
-    ub = min(1.0, acc + interval)
+    # if acc == 100% or acc == 1.0 pertube the acc for the lower
+    # bound so we get something reasonable
+    if acc == 100.0 or acc == 1.0:
+      lbacc = 0.99
+    else:
+      lbacc = acc
+    lb = max(0, acc - 1.96*math.sqrt(lbacc*(1-lbacc)/n))
+    ub = min(1.0, acc + 1.96*math.sqrt(acc*(1-acc)/n))
     return (lb,ub)
 
 def regression_confint(rs_score, n, k):
