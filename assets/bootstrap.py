@@ -1,6 +1,8 @@
 import pandas as pd
 import statistics as stats
 from numpy import percentile
+import warnings
+
 
 def bootstrap(model, X, y, random_state=None):
     '''
@@ -32,7 +34,9 @@ def bootstrap(model, X, y, random_state=None):
             B = D.sample(n=rows,replace=True,random_state=random_state+i)
         BX = B.drop(columns=y.columns)
         By = B[y.columns]
+        warnings.filterwarnings('ignore')
         model.fit(BX, By)
+        warnings.filterwarnings('always')
         score_list.append(model.score(BX, By))
     score_list.sort()
     score_avg = stats.mean(score_list)
