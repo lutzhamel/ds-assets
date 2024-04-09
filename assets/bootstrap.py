@@ -1,40 +1,65 @@
 import pandas as pd
+import statistics as stats
 from numpy import percentile
-from sklearn.model_selection import train_test_split
 
-def bootstrap(model,D,target_name):
-    rows = D.shape[0]
-    acc_list = []
+def bootstrap(model, X, y, random_state=None):
+    '''
+    Compute a bootstrapped model score together with its 95% probability 
+    bound. If the model object is a classification model then model accuracy 
+    is computed and if the model object is a regression model then the R^2 
+    score is computed.
+
+    Parameters
+        model - either a classification or regression model
+        X - sklearn style feature matrix
+        y - sklearn style target vector
+        random_state - controls the sampling of the bootstrap samples, 
+                       pass an int for reproducible output across multiple 
+                       function calls.
+    
+    Returns
+        (score, lower bound, upper bound) 
+    '''
+    X = pd.DataFrame(X)
+    y = pd.DataFrame(y)
+    rows = X.shape[0]
+    D = pd.concat([X,y], axis=1)
+    score_list = []
     for i in range(200):
-        B = D.sample(n=rows,replace=True)
-        X = B.drop(target_name,1)
-        y = B[target_name]
-        train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.8, test_size=0.2)
-        model.fit(train_X, train_y)
-        acc_list.append(model.score(test_X, test_y))
-    acc_list.sort()
-    ub = percentile(acc_list,97.5)
-    lb = percentile(acc_list,2.5)
-    return (lb, ub)
+        if not random_state:
+            B = D.sample(n=rows,replace=True)
+        else:
+            B = D.sample(n=rows,replace=True,random_state=random_state+i)
+        BX = B.drop(columns=y.columns)
+        By = B[y.columns]
+        model.fit(BX, By)
+        score_list.append(model.score(BX, By))
+    score_list.sort()
+    score_avg = stats.mean(score_list)
+    score_ub = percentile(score_list,97.5)
+    score_lb = percentile(score_list,2.5)
+    return (score_avg, score_lb, score_ub)
 
 if __name__ == '__main__':
     from sklearn import tree
 
     # classification
     t1c = tree.DecisionTreeClassifier(criterion='entropy', max_depth=3)
-    t2c = tree.DecisionTreeClassifier(criterion='entropy', max_depth=None)
 
     print("******** abalone ***********")
-    df = pd.read_csv("assets/abalone.csv")
-    print("Confidence interval max_depth=3: {}".format(bootstrap(t1c,df,'sex')))
-    print("Confidence interval max_depth=None: {}".format(bootstrap(t2c,df,'sex')))
+    df = pd.read_csv("abalone.csv")
+    X = df.drop(columns=['sex'])
+    y = df[['sex']]
+    print("Confidence interval max_depth=3: {}".format(bootstrap(t1c,X,y)))
+    print("Confidence interval max_depth=3: {}".format(bootstrap(t1c,X,y,random_state=1)))
 
     # regression
     t1r = tree.DecisionTreeRegressor(max_depth=3)
-    t2r = tree.DecisionTreeRegressor(max_depth=None)
 
     print("******** cars ***********")
-    df = pd.read_csv("assets/cars.csv")
-    print("Confidence interval max_depth=3: {}".format(bootstrap(t1r,df,'dist')))
-    print("Confidence interval max_depth=None: {}".format(bootstrap(t2r,df,'dist')))
+    df = pd.read_csv("cars.csv")
+    X = df.drop(columns=['dist'])
+    y = df['dist']
+    print("Confidence interval max_depth=3: {}".format(bootstrap(t1r,X,y)))
+    print("Confidence interval max_depth=3: {}".format(bootstrap(t1r,X,y,random_state=1)))
 
