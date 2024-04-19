@@ -42,10 +42,10 @@ def bootstrap(model, X, y, X_val=None, y_val=None, random_state=None):
         warnings.filterwarnings('ignore')
         model.fit(BX, By)
         warnings.filterwarnings('always')
-        if X_val:
-            score_list.append(model.score(X_val, y_val))
-        else:
+        if X_val is not None:
             score_list.append(model.score(X, y))
+        else:
+            score_list.append(model.score(X_val, y_val))
     score_list.sort()
     score_avg = stats.mean(score_list)
     score_ub = percentile(score_list,97.5)
