@@ -4,7 +4,7 @@ from numpy import percentile
 import warnings
 
 
-def bootstrap(model, X, y, random_state=None):
+def bootstrap(model, X, y, X_val=None, y_val=None, random_state=None):
     '''
     Compute a bootstrapped model score together with its 95% probability 
     bound. If the model object is a classification model then model accuracy 
@@ -13,12 +13,17 @@ def bootstrap(model, X, y, random_state=None):
 
     Parameters
         model - either a classification or regression model
-        X - sklearn style feature matrix
-        y - sklearn style target vector
+        X - sklearn style feature matrix for training
+        y - sklearn style target vector for training
+        X_val - sklearn style feature matrix for validation
+        y_val - sklearn style target vector for validation
         random_state - controls the sampling of the bootstrap samples, 
                        pass an int for reproducible output across multiple 
                        function calls.
     
+    Note: if no validation data is given then the training data is 
+    used for testing.
+
     Returns
         (score, lower bound, upper bound) 
     '''
@@ -37,7 +42,10 @@ def bootstrap(model, X, y, random_state=None):
         warnings.filterwarnings('ignore')
         model.fit(BX, By)
         warnings.filterwarnings('always')
-        score_list.append(model.score(BX, By))
+        if X_val:
+            score_list.append(model.score(X_val, y_val))
+        else:
+            score_list.append(model.score(X, y))
     score_list.sort()
     score_avg = stats.mean(score_list)
     score_ub = percentile(score_list,97.5)
