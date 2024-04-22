@@ -1,6 +1,7 @@
 import pandas as pd
 import statistics as stats
 from numpy import percentile
+from sklearn.model_selection import train_test_split
 import warnings
 
 
@@ -38,9 +39,10 @@ def bootstrap(model, X, y, random_state=None):
         BX = B.drop(columns=y.columns)
         By = B[y.columns]
         warnings.filterwarnings('ignore')
+        train_test_split(BX,By,train_size=0.7,test_size=0.3,random_state=random_state)
         model.fit(BX, By)
-        warnings.filterwarnings('always')
         score_list.append(model.score(BX, By))
+        warnings.filterwarnings('always')
     score_list.sort()
     score_avg = stats.mean(score_list)
     score_ub = percentile(score_list,97.5)
