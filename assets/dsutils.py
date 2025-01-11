@@ -184,6 +184,8 @@ def execute_query(credentials, sql_string):
                    user=credentials.user,
                    password=credentials.password,
                    database=credentials.userdb)
+  warnings.filterwarnings('ignore')
   data = pd.read_sql(sql_string, con=db)
+  warnings.filterwarnings('always')
   db.close()
   return data
