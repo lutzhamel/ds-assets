@@ -12,6 +12,8 @@ from sklearn import cluster # KMeans
 import seaborn as sns; sns.set_theme()
 from matplotlib import pyplot # show, xlabel, ylabel
 from scipy.spatial import distance # cdist
+import pymysql as sql
+
 
 
 def classification_confint(acc, n):
@@ -151,3 +153,37 @@ if __name__ == '__main__':
    df = pd.read_csv("iris.csv")
    X = df.drop(columns=['Species'])
    plot_elbow(X)
+
+class DBCredentials:
+  '''
+  Allows the user to instantiate DB credential objects for the
+  use in the 'execute_query' function.
+
+  The defaults are set to point to the default DB for the CSC310
+  course at URI.
+  '''
+  def __init__(self,
+               host = 'testdb.cwy05wfzuxbv.us-east-1.rds.amazonaws.com',
+               userdb = 'world',
+               user = 'csc310',
+               password = 'csc310$is$fun'):
+    self.host = host
+    self.userdb = userdb
+    self.user = user
+    self.password = password
+
+def execute_query(credentials, sql_string):
+  '''
+  execute_query
+    credentials - a instantiated DBCredentials object
+    sql_string  - a string holding the SQL query
+  
+  Returns a Pandas dataframe holding the result table
+  '''
+  db = sql.connect(host=credentials.host,
+                   user=credentials.user,
+                   password=credentials.password,
+                   database=credentials.userdb)
+  data = pd.read_sql(sql_string, con=db)
+  db.close()
+  return data
