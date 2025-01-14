@@ -2,6 +2,12 @@
 dsutils - Utility modules for the "Programming for Data Science" course
           at the University of Rhode Island.
 '''
+
+import os
+import subprocess
+if 'google.colab' in os.sys.modules:
+  subprocess.run(['pip3','install','PyMySQL'])
+
 import warnings
 import math
 import pandas as pd
