@@ -15,6 +15,7 @@ import statistics as stats
 import numpy # percentile
 from sklearn import model_selection # train_test_split
 from sklearn import cluster # KMeans
+from sklearn.base import clone
 import seaborn as sns; sns.set_theme()
 from matplotlib import pyplot # show, xlabel, ylabel
 from scipy.spatial import distance # cdist
@@ -126,11 +127,9 @@ def bootstrap(model, X, y, random_state=None):
         BX = B.drop(columns=y.columns)
         By = B[y.columns]
         warnings.filterwarnings('ignore')
-        model_selection.train_test_split(BX,By,train_size=0.7,test_size=0.3,random_state=random_state)
-        model.fit(BX, By)
-        score_list.append(model.score(BX, By))
+        bootmodel = clone(model).fit(BX, By)
+        score_list.append(bootmodel.score(BX, By))
         warnings.filterwarnings('always')
-    score_list.sort()
     score_avg = stats.mean(score_list)
     score_ub = numpy.percentile(score_list,97.5)
     score_lb = numpy.percentile(score_list,2.5)
