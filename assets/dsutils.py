@@ -13,9 +13,9 @@ import math
 import pandas as pd
 import statistics as stats
 import numpy # percentile
-from sklearn import model_selection # train_test_split
 from sklearn import cluster # KMeans
 from sklearn.base import clone
+from sklearn.metrics import accuracy_score
 import seaborn as sns; sns.set_theme()
 from matplotlib import pyplot # show, xlabel, ylabel
 from scipy.spatial import distance # cdist
@@ -93,15 +93,15 @@ def plot_elbow(X, n=10):
    pyplot.show()
 
 
-def bootstrap(model, X, y):
+def classification_bootstrap(model, X, y):
     '''
-    Compute a bootstrapped model score together with its 95% probability 
+    Compute a bootstrapped model accuracy together with its 95% probability 
     bound. If the model object is a classification model then model accuracy 
     is computed and if the model object is a regression model then the R^2 
     score is computed.
 
     Parameters
-        model - either a classification or regression model
+        model - a classification model
         X - sklearn style feature matrix
         y - sklearn style target vector
     
@@ -119,10 +119,10 @@ def bootstrap(model, X, y):
                      random_state=i)
         BX = B.drop(columns=y.columns)
         By = B[y.columns]
-        warnings.filterwarnings('ignore')
         bootmodel = clone(model).fit(BX, By)
-        warnings.filterwarnings('always')
-        score_list.append(bootmodel.score(BX, By))
+        predict_y = bootmodel.predict(BX)
+        acc = accuracy_score(By, predict_y)
+        score_list.append(acc)
     score_avg = stats.mean(score_list)
     score_list.sort()
     score_ub = numpy.percentile(score_list,97.5)
@@ -174,14 +174,7 @@ if __name__ == '__main__':
   df = pd.read_csv("abalone.csv")
   X = df.drop(columns=['sex'])
   y = df[['sex']]
-  print("Confidence interval max_depth=3: {}".format(bootstrap(t1c,X,y)))
-
-  # bootstrap: regression
-  t1r = tree.DecisionTreeRegressor(max_depth=3)
-  df = pd.read_csv("cars.csv")
-  X = df.drop(columns=['dist'])
-  y = df['dist']
-  print("Confidence interval max_depth=3: {}".format(bootstrap(t1r,X,y)))
+  print("Confidence interval max_depth=3: {}".format(classification_bootstrap(t1c,X,y)))
 
   # elbow plot
   df = pd.read_csv("iris.csv")
