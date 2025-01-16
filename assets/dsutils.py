@@ -110,11 +110,13 @@ def bootstrap(model, X, y):
     '''
     X = pd.DataFrame(X)
     y = pd.DataFrame(y)
-    rows = X.shape[0]
     D = pd.concat([X,y], axis=1)
     score_list = []
     for i in range(200):
-        B = D.sample(n=rows,replace=True,random_state=i)
+        B = D.sample(n=X.shape[0],
+                     axis=0,
+                     replace=True,
+                     random_state=i)
         BX = B.drop(columns=y.columns)
         By = B[y.columns]
         warnings.filterwarnings('ignore')
