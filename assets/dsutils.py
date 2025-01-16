@@ -117,7 +117,9 @@ def bootstrap(model, X, y):
         B = D.sample(n=rows,replace=True,random_state=i)
         BX = B.drop(columns=y.columns)
         By = B[y.columns]
+        warnings.filterwarnings('ignore')
         bootmodel = clone(model).fit(BX, By)
+        warnings.filterwarnings('always')
         score_list.append(bootmodel.score(BX, By))
     score_avg = stats.mean(score_list)
     score_list.sort()
