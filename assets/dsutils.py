@@ -93,7 +93,7 @@ def plot_elbow(X, n=10):
    pyplot.show()
 
 
-def bootstrap(model, X, y, random_state=None):
+def bootstrap(model, X, y):
     '''
     Compute a bootstrapped model score together with its 95% probability 
     bound. If the model object is a classification model then model accuracy 
@@ -104,13 +104,7 @@ def bootstrap(model, X, y, random_state=None):
         model - either a classification or regression model
         X - sklearn style feature matrix
         y - sklearn style target vector
-        random_state - controls the sampling of the bootstrap samples, 
-                       pass an int for reproducible output across multiple 
-                       function calls.
     
-    Note: if no validation data is given then the training data is 
-    used for testing.
-
     Returns
         (score, lower bound, upper bound) 
     '''
@@ -120,44 +114,17 @@ def bootstrap(model, X, y, random_state=None):
     D = pd.concat([X,y], axis=1)
     score_list = []
     for i in range(200):
-        if not random_state:
-            B = D.sample(n=rows,replace=True)
-        else:
-            B = D.sample(n=rows,replace=True,random_state=random_state+i)
+        B = D.sample(n=rows,replace=True,random_state=i)
         BX = B.drop(columns=y.columns)
         By = B[y.columns]
-        warnings.filterwarnings('ignore')
         bootmodel = clone(model).fit(BX, By)
         score_list.append(bootmodel.score(BX, By))
-        warnings.filterwarnings('always')
     score_avg = stats.mean(score_list)
+    score_list.sort()
     score_ub = numpy.percentile(score_list,97.5)
     score_lb = numpy.percentile(score_list,2.5)
     return (score_avg, score_lb, score_ub)
 
-if __name__ == '__main__':
-   from sklearn import tree
-
-   # bootstrap: classification
-   t1c = tree.DecisionTreeClassifier(criterion='entropy', max_depth=3)
-   df = pd.read_csv("abalone.csv")
-   X = df.drop(columns=['sex'])
-   y = df[['sex']]
-   print("Confidence interval max_depth=3: {}".format(bootstrap(t1c,X,y)))
-   print("Confidence interval max_depth=3: {}".format(bootstrap(t1c,X,y,random_state=1)))
-
-   # bootstrap: regression
-   t1r = tree.DecisionTreeRegressor(max_depth=3)
-   df = pd.read_csv("cars.csv")
-   X = df.drop(columns=['dist'])
-   y = df['dist']
-   print("Confidence interval max_depth=3: {}".format(bootstrap(t1r,X,y)))
-   print("Confidence interval max_depth=3: {}".format(bootstrap(t1r,X,y,random_state=1)))
-
-   # elbow plot
-   df = pd.read_csv("iris.csv")
-   X = df.drop(columns=['Species'])
-   plot_elbow(X)
 
 class DBCredentials:
   '''
@@ -194,3 +161,26 @@ def execute_query(credentials, sql_string):
   warnings.filterwarnings('always')
   db.close()
   return data
+
+if __name__ == '__main__':
+  from sklearn import tree
+
+  # bootstrap: classification
+  t1c = tree.DecisionTreeClassifier(criterion='entropy', max_depth=3)
+  df = pd.read_csv("abalone.csv")
+  X = df.drop(columns=['sex'])
+  y = df[['sex']]
+  print("Confidence interval max_depth=3: {}".format(bootstrap(t1c,X,y)))
+
+  # bootstrap: regression
+  t1r = tree.DecisionTreeRegressor(max_depth=3)
+  df = pd.read_csv("cars.csv")
+  X = df.drop(columns=['dist'])
+  y = df['dist']
+  print("Confidence interval max_depth=3: {}".format(bootstrap(t1r,X,y)))
+
+  # elbow plot
+  df = pd.read_csv("iris.csv")
+  X = df.drop(columns=['Species'])
+  plot_elbow(X)
+
