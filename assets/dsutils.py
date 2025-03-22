@@ -21,7 +21,6 @@ from scipy.spatial import distance # cdist
 import pymysql as sql
 
 
-
 def classification_confint(acc, n):
     '''
     Compute the 95% confidence interval for a classification problem.
@@ -56,6 +55,34 @@ def regression_confint(rs_score, n, k):
     lb = max(0, rs_score - interval)
     ub = min(1.0, rs_score + interval)
     return (lb,ub)
+
+def acc_score(model, X, y):
+    '''
+    Compute the accuracy score for a classification model together
+    with its 95% confidence interval.
+    Parameters:
+      model -- a classification model
+      X     -- sklearn style feature matrix
+      y     -- sklearn style target vector
+    Returns (accuracy score,lower bound, upper bound)
+    '''
+    acc = model.score(X,y)
+    lb,ub = classification_confint(acc, X.shape[0])
+    return (acc, lb, ub)
+
+def rs_score(model, X, y):
+    '''
+    Compute the R^2 score for a regression model together
+    with its 95% confidence interval.
+    Parameters:
+      model -- a regression model
+      X     -- sklearn style feature matrix
+      y     -- sklearn style target vector
+    Returns  (R^2 score, lower bound, upper bound)
+    ''' 
+    rs = model.score(X,y)
+    lb,ub = regression_confint(rs, X.shape[0], X.shape[1])
+    return (rs, lb, ub)
 
 def plot_elbow(X, n=10):
    '''
