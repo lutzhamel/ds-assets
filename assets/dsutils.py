@@ -56,7 +56,7 @@ def regression_confint(rs_score, n, k):
     ub = min(1.0, rs_score + interval)
     return (lb,ub)
 
-def acc_score(model, X, y):
+def acc_score(model, X, y, as_string=False):
     '''
     Compute the accuracy score for a classification model together
     with its 95% confidence interval.
@@ -68,9 +68,15 @@ def acc_score(model, X, y):
     '''
     acc = model.score(X,y)
     lb,ub = classification_confint(acc, X.shape[0])
-    return (acc, lb, ub)
 
-def rs_score(model, X, y):
+    if as_string:
+       return f"Accuracy: {acc:.2f} ({lb:.2f}, {ub:.2f})"
+    else:
+       # return as a tuple
+       # (accuracy score, lower bound, upper bound)
+       return (acc, lb, ub)
+
+def rs_score(model, X, y, as_string=False):
     '''
     Compute the R^2 score for a regression model together
     with its 95% confidence interval.
@@ -82,7 +88,13 @@ def rs_score(model, X, y):
     ''' 
     rs = model.score(X,y)
     lb,ub = regression_confint(rs, X.shape[0], X.shape[1])
-    return (rs, lb, ub)
+
+    if as_string:
+       return f"Accuracy: {rs:.2f} ({lb:.2f}, {ub:.2f})"
+    else:
+       # return as a tuple
+       # (r^2 score, lower bound, upper bound)
+       return (rs, lb, ub)
 
 def plot_elbow(X, n=10):
    '''
