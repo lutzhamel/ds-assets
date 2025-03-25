@@ -90,7 +90,7 @@ def rs_score(model, X, y, as_string=False):
     lb,ub = regression_confint(rs, X.shape[0], X.shape[1])
 
     if as_string:
-       return f"Accuracy: {rs:.2f} ({lb:.2f}, {ub:.2f})"
+       return f"R^2 Score: {rs:.2f} ({lb:.2f}, {ub:.2f})"
     else:
        # return as a tuple
        # (r^2 score, lower bound, upper bound)
