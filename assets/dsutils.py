@@ -64,6 +64,8 @@ def acc_score(model, X, y, as_string=False):
       model -- a classification model
       X     -- sklearn style feature matrix
       y     -- sklearn style target vector
+      as_string -- if True return a formatted string, otherwise
+                   return a tuple (accuracy score, lower bound, upper bound)
     Returns (accuracy score,lower bound, upper bound)
     '''
     acc = model.score(X,y)
@@ -84,6 +86,8 @@ def rs_score(model, X, y, as_string=False):
       model -- a regression model
       X     -- sklearn style feature matrix
       y     -- sklearn style target vector
+      as_string -- if True return a formatted string, otherwise
+                   return a tuple (R^2 score, lower bound, upper bound)
     Returns  (R^2 score, lower bound, upper bound)
     ''' 
     rs = model.score(X,y)
