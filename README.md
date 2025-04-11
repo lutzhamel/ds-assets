@@ -3,7 +3,7 @@ This repository contains the assets for the data science notebooks in the ds-not
 
 The content in the assets folder is made accessible in notebooks through the following
 preamble,
-```
+```python
 ###### Config #####
 import sys, os, platform
 if os.path.isdir("ds-assets"):
