@@ -4,15 +4,15 @@ This repository contains the assets for the data science notebooks in the ds-not
 The content in the assets folder is made accessible in notebooks through the following
 preamble,
 ```
-###### Set Up #####
-# verify our folder with the data and module assets is installed
-# if it is installed make sure it is the latest
-!test -e ds-assets && cd ds-assets && git pull && cd ..
-# if it is not installed clone it 
-!test ! -e ds-assets && git clone https://github.com/lutzhamel/ds-assets.git
-# point to the folder with the assets
-home = "ds-assets/assets/" 
-import sys
-sys.path.append(home)      # add home folder to module search path
+###### Config #####
+import sys, os, platform
+if os.path.isdir("ds-assets"):
+  !cd ds-assets && git pull
+else:
+  !git clone https://github.com/lutzhamel/ds-assets.git
+colab = True if 'google.colab' in os.sys.modules else False
+system = platform.system() # "Windows", "Linux", "Darwin"
+home = "ds-assets/assets/"
+sys.path.append(home) 
 ```
 
