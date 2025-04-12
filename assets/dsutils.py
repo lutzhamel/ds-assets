@@ -104,7 +104,7 @@ def rs_score(model, X, y, as_string=False):
        # (r^2 score, lower bound, upper bound)
        return (rs, lb, ub)
 
-def bootstrap_score(model, X, y, s=200):
+def bootstrap_score(model, X, y, s=200, as_string=False):
     '''
     Compute a bootstrapped model score together with its 95% probability 
     bound. If the model object is a classification model then model accuracy 
@@ -116,7 +116,9 @@ def bootstrap_score(model, X, y, s=200):
         X - sklearn style feature matrix
         y - sklearn style target vector
         s - number of bootstrap samples
-    
+        as_string -- if True return a formatted string, otherwise
+                   return a tuple (score, lower bound, upper bound)
+   
     Returns
         (score, lower bound, upper bound) 
     '''
@@ -138,11 +140,17 @@ def bootstrap_score(model, X, y, s=200):
     score_list.sort()
     score_ub = numpy.percentile(score_list,97.5)
     score_lb = numpy.percentile(score_list,2.5)
-    return (score_avg, score_lb, score_ub)
+    if as_string:
+       return f"Score: {score_avg:.2f} ({score_lb:.2f}, {score_ub:.2f})"
+    else:
+       # return as a tuple
+       # (score, lower bound, upper bound)
+      return (score_avg, score_lb, score_ub)
 
 def confusion_matrix(model, X, y, labels=None):
     '''
-    Compute the confusion matrix for a classification model.
+    Compute the confusion matrix for a classification model using
+    test data (X,y)
     Parameters:
       model -- a classification model
       X     -- sklearn style feature matrix
@@ -161,13 +169,13 @@ def confusion_matrix(model, X, y, labels=None):
 #################################################################################
 # clustering
 
-def plot_elbow(X, k=10):
+def plot_elbow(X, n=10):
     """
     Generates an elbow plot for KMeans clustering.
     
     Parameters:
     - X: Feature matrix (numpy array or pandas DataFrame)
-    - k: Max number of clusters to consider (int)
+    - n: Max number of clusters to consider (int)
 
     The function fits KMeans for 1 to k clusters and plots the average within-cluster variance.
     """
@@ -175,12 +183,12 @@ def plot_elbow(X, k=10):
 
     # Loop over number of clusters from 1 to k
     average_variances = []
-    for n_clusters in range(1, k + 1):
-        kmeans = sklearn.cluster.KMeans(n_clusters=n_clusters, random_state=42)
-        kmeans.fit(X)
+    for k in range(1, n + 1):
+        kmeans = sklearn.cluster.KMeans(k).fit(X)
         
         # Compute average within-cluster variance
-        avg_variance = kmeans.inertia_ / X.shape[0]
+        #avg_variance = kmeans.inertia_ / X.shape[0]
+        avg_variance = kmeans.inertia_ / k
         average_variances.append(avg_variance)
 
     # Plot the elbow curve
@@ -241,8 +249,8 @@ if __name__ == '__main__':
   X = df.drop(columns=['sex'])
   y = df[['sex']]
   tree = sklearn.tree.DecisionTreeClassifier(max_depth=3).fit(X,y)
-  print("bootstrap confint: {}".format(bootstrap_score(tree,X,y)))
-  print("estimated confint: {}".format(acc_score(tree,X,y)))
+  print("bootstrap confint: {}".format(bootstrap_score(tree,X,y,as_string=True)))
+  print("estimated confint: {}".format(acc_score(tree,X,y,as_string=True)))
   print(confusion_matrix(tree,X,y))
 
   # elbow plot
