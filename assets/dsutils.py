@@ -21,6 +21,8 @@ import numpy
 import sklearn
 import matplotlib.pyplot as plt
 import pymysql as sql
+from sklearn.feature_extraction.text import CountVectorizer
+from nltk.stem import PorterStemmer
 
 #################################################################################
 # model evaluation
@@ -203,6 +205,47 @@ def plot_elbow(X, n=10):
 
 
 #################################################################################
+# NLP
+
+def docterm_matrix(docs, 
+                   doc_names=None, 
+                   min_df=1,
+                   token_pattern='[a-zA-Z]+',
+                   stem=False,
+                   stop_words=None):
+    '''
+    Compute a document-term matrix from a list of documents.
+    docs - a list of documents
+    doc_names - a list of document names
+    min_df - minimum document frequency
+    token_pattern - token pattern
+    stem - if True stem the terms
+    stop_words - None or a list of stop words or 'english'
+    '''
+    if not doc_names:
+      doc_names = [f'doc{i}' for i in range(len(docs))]
+
+    doc_analyzer = CountVectorizer(analyzer = "word",
+                              stop_words = stop_words,
+                              token_pattern = token_pattern) \
+          .build_analyzer() # retrieve the analyzer
+    if stem:
+      stemmer = PorterStemmer()
+      analyzer = lambda doc: [stemmer.stem(w) for w in doc_analyzer(doc)]
+    else:
+      analyzer = doc_analyzer
+      
+    vectorizer = CountVectorizer(analyzer=analyzer, # use our doc stemmer function
+                                 binary=True,
+                                 min_df=min_df)
+    doc_array = vectorizer.fit_transform(docs).toarray()
+    doc_features = vectorizer.get_feature_names_out()
+    docterm = pd.DataFrame(data=doc_array,
+                           index=doc_names,
+                           columns=doc_features)
+    return docterm
+
+#################################################################################
 # database utilities
 
 class DBCredentials:
@@ -257,4 +300,11 @@ if __name__ == '__main__':
   df = pd.read_csv("iris.csv")
   X = df.drop(columns=['Species'])
   plot_elbow(X)
+
+  # NLP
+  docs = ["the quick brown fox jumps over the lazy dog",
+        "rudi is a lazy brown dog",
+        "princess jumps over the lazy dog"]
+  docterm = docterm_matrix(docs)
+  print(docterm)
 
