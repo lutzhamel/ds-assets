@@ -1,25 +1,31 @@
 '''
-dsutils - Utility modules for the "Programming for Data Science" course
-          at the University of Rhode Island.
+sklearnutils.py
+A collection of utility functions for sklearn models.
+(c) University of Rhode Island - Lutz Hamel
 '''
 
-import os
-import subprocess
-if 'google.colab' in os.sys.modules:
-  subprocess.run(['pip3','install','PyMySQL'])
+# requires
+# pip install pymysql
+# pip install seaborn
+# pip install statistics
+# pip install numpy
+# pip install pandas
+# pip install matplotlib
+# pip install scikit-learn
 
 import warnings
 import math
 import pandas as pd
 import statistics as stats
-import numpy # percentile
-from sklearn import cluster # KMeans
-from sklearn.base import clone
-import seaborn as sns; sns.set_theme()
-from matplotlib import pyplot # show, xlabel, ylabel
-from scipy.spatial import distance # cdist
+import numpy
+import sklearn
+import matplotlib.pyplot as plt
 import pymysql as sql
+from sklearn.feature_extraction.text import CountVectorizer
+from nltk.stem import PorterStemmer
 
+#################################################################################
+# model evaluation
 
 def classification_confint(acc, n):
     '''
@@ -100,42 +106,7 @@ def rs_score(model, X, y, as_string=False):
        # (r^2 score, lower bound, upper bound)
        return (rs, lb, ub)
 
-def plot_elbow(X, n=10):
-   '''
-   KMeans Elbow plot:
-     X - feature matrix
-     n - max number of centroids to consider
-
-   inspired by the source code from
-   https://www.slideshare.net/SarahGuido/kmeans-clustering-with-scikitlearn
-   '''
-   # flush the display stack
-   pyplot.show()
-    
-   # kmeans models for each k
-   kMeansModels = [cluster.KMeans(n_clusters=k, n_init='auto').fit(X) for k in range(1, n+1)]
-    
-   # coordinates of the centroids of the models
-   centroids = [m.cluster_centers_ for m in kMeansModels]
-   
-   # find the distances of the values to the centroids
-   k_euclid = [distance.cdist(X, cent) for cent in centroids]
-   
-   # find the distance of each point to its cluster center
-   dist = [numpy.min(ke, axis=1) for ke in k_euclid]
-   
-   # average variance for each cluster configuration
-   dist_tuple = zip(list(range(1,n+1)),dist)
-   average_var = [sum(d**2)/k for (k,d) in dist_tuple]
-
-   # plot the variance of the models
-   sns.lineplot(x=list(range(1,n+1)), y=average_var)
-   pyplot.xlabel('k')
-   pyplot.ylabel('Average Cluster Variance')
-   pyplot.show()
-
-
-def bootstrap(model, X, y):
+def bootstrap_score(model, X, y, s=200, as_string=False):
     '''
     Compute a bootstrapped model score together with its 95% probability 
     bound. If the model object is a classification model then model accuracy 
@@ -146,7 +117,10 @@ def bootstrap(model, X, y):
         model - a classification/regression model
         X - sklearn style feature matrix
         y - sklearn style target vector
-    
+        s - number of bootstrap samples
+        as_string -- if True return a formatted string, otherwise
+                   return a tuple (score, lower bound, upper bound)
+   
     Returns
         (score, lower bound, upper bound) 
     '''
@@ -154,22 +128,125 @@ def bootstrap(model, X, y):
     y = pd.DataFrame(y)
     D = pd.concat([X,y], axis=1)
     score_list = []
-    for i in range(200):
+    for i in range(s):
         B = D.sample(n=X.shape[0],
                      axis=0,
                      replace=True,
                      random_state=i)
         BX = B.drop(columns=y.columns)
         By = B[y.columns]
-        bootmodel = clone(model).fit(BX, By)
+        bootmodel = sklearn.base.clone(model).fit(BX, By)
         acc = bootmodel.score(BX,By)
         score_list.append(acc)
     score_avg = stats.mean(score_list)
     score_list.sort()
     score_ub = numpy.percentile(score_list,97.5)
     score_lb = numpy.percentile(score_list,2.5)
-    return (score_avg, score_lb, score_ub)
+    if as_string:
+       return f"Score: {score_avg:.2f} ({score_lb:.2f}, {score_ub:.2f})"
+    else:
+       # return as a tuple
+       # (score, lower bound, upper bound)
+      return (score_avg, score_lb, score_ub)
 
+def confusion_matrix(model, X, y, labels=None):
+    '''
+    Compute the confusion matrix for a classification model using
+    test data (X,y)
+    Parameters:
+      model -- a classification model
+      X     -- sklearn style feature matrix
+      y     -- sklearn style target vector
+      labels -- list of class labels
+    Returns a Pandas dataframe holding the confusion matrix
+    '''
+    if not labels:
+        labels = list(model.classes_)
+    if len(labels) != y.value_counts().shape[0]:
+        raise ValueError('labels must match the number of classes in y')
+    y_pred = model.predict(X)
+    cm = sklearn.metrics.confusion_matrix(y, y_pred, labels=labels)
+    return pd.DataFrame(cm, index=labels, columns=labels)  
+
+#################################################################################
+# clustering
+
+def plot_elbow(X, n=10):
+    """
+    Generates an elbow plot for KMeans clustering.
+    
+    Parameters:
+    - X: Feature matrix (numpy array or pandas DataFrame)
+    - n: Max number of clusters to consider (int)
+
+    The function fits KMeans for 1 to k clusters and plots the average within-cluster variance.
+    """
+    plt.show() # flush any previous plots
+
+    # Loop over number of clusters from 1 to k
+    average_variances = []
+    for k in range(1, n + 1):
+        kmeans = sklearn.cluster.KMeans(k).fit(X)
+        
+        # Compute average within-cluster variance
+        #avg_variance = kmeans.inertia_ / X.shape[0]
+        avg_variance = kmeans.inertia_ / k
+        average_variances.append(avg_variance)
+
+    # Plot the elbow curve
+    plt.figure(figsize=(8, 5))
+    plt.plot(range(1, k + 1), average_variances, 'bo-')
+    plt.xlabel('Number of Clusters (k)')
+    plt.ylabel('Average Within-Cluster Variance')
+    plt.title('Elbow Method for Optimal k')
+    plt.xticks(range(1, k + 1))
+    plt.grid(True)
+    plt.show()
+
+
+#################################################################################
+# NLP
+
+def docterm_matrix(docs, 
+                   doc_names=None, 
+                   min_df=1,
+                   token_pattern='[a-zA-Z]+',
+                   stem=False,
+                   stop_words=None):
+    '''
+    Compute a document-term matrix from a list of documents.
+    docs - a list of documents
+    doc_names - a list of document names
+    min_df - minimum document frequency
+    token_pattern - token pattern
+    stem - if True stem the terms
+    stop_words - None or a list of stop words or 'english'
+    '''
+    if not doc_names:
+      doc_names = [f'doc{i}' for i in range(len(docs))]
+
+    doc_analyzer = CountVectorizer(analyzer = "word",
+                              stop_words = stop_words,
+                              token_pattern = token_pattern) \
+          .build_analyzer() # retrieve the analyzer
+    if stem:
+      stemmer = PorterStemmer()
+      analyzer = lambda doc: [stemmer.stem(w) for w in doc_analyzer(doc)]
+    else:
+      analyzer = doc_analyzer
+      
+    vectorizer = CountVectorizer(analyzer=analyzer, # use our doc stemmer function
+                                 binary=True,
+                                 min_df=min_df)
+    doc_array = vectorizer.fit_transform(docs).toarray()
+    doc_features = vectorizer.get_feature_names_out()
+    docterm = pd.DataFrame(data=doc_array,
+                           index=doc_names,
+                           columns=doc_features)
+    return docterm
+
+#################################################################################
+# database utilities
 
 class DBCredentials:
   '''
@@ -191,7 +268,7 @@ class DBCredentials:
 
 def execute_query(credentials, sql_string):
   '''
-  execute_query
+  execute an sql query
     credentials - a instantiated DBCredentials object
     sql_string  - a string holding the SQL query
   
@@ -201,24 +278,33 @@ def execute_query(credentials, sql_string):
                    user=credentials.user,
                    password=credentials.password,
                    database=credentials.userdb)
-  warnings.filterwarnings('ignore')
-  data = pd.read_sql(sql_string, con=db)
-  warnings.filterwarnings('always')
+  with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    data = pd.read_sql(sql_string, con=db)
   db.close()
   return data
 
+#################################################################################
+# testing
 if __name__ == '__main__':
-  from sklearn import tree
-
-  # bootstrap: classification
-  t1c = tree.DecisionTreeClassifier(criterion='entropy', max_depth=3)
+  # classification
   df = pd.read_csv("abalone.csv")
   X = df.drop(columns=['sex'])
   y = df[['sex']]
-  print("Confidence interval max_depth=3: {}".format(bootstrap(t1c,X,y)))
+  tree = sklearn.tree.DecisionTreeClassifier(max_depth=3).fit(X,y)
+  print("bootstrap confint: {}".format(bootstrap_score(tree,X,y,as_string=True)))
+  print("estimated confint: {}".format(acc_score(tree,X,y,as_string=True)))
+  print(confusion_matrix(tree,X,y))
 
   # elbow plot
   df = pd.read_csv("iris.csv")
   X = df.drop(columns=['Species'])
   plot_elbow(X)
+
+  # NLP
+  docs = ["the quick brown fox jumps over the lazy dog",
+        "rudi is a lazy brown dog",
+        "princess jumps over the lazy dog"]
+  docterm = docterm_matrix(docs)
+  print(docterm)
 
