@@ -210,7 +210,7 @@ def plot_elbow(X, n=10):
 def docterm_matrix(docs, 
                    doc_names=None, 
                    min_df=1,
-                   token_pattern='[a-zA-Z]+',
+                   token_pattern='(?u)\\b\\w+\\b',
                    stem=False,
                    stop_words=None):
     '''
