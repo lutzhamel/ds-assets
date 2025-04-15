@@ -4,6 +4,11 @@ A collection of utility functions for sklearn models.
 (c) University of Rhode Island - Lutz Hamel
 '''
 
+import os
+import subprocess
+if 'google.colab' in os.sys.modules:
+  subprocess.run(['pip3','install','PyMySQL'])
+
 # requires
 # pip install pymysql
 # pip install seaborn
