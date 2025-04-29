@@ -137,12 +137,12 @@ def bootstrap_score(model, X, y, s=200, as_string=False):
         B = D.sample(n=X.shape[0],
                      axis=0,
                      replace=True,
-                     random_state=i)
+                     )
         BX = B.drop(columns=y.columns)
         By = B[y.columns]
         bootmodel = sklearn.base.clone(model).fit(BX, By)
-        acc = bootmodel.score(BX,By)
-        score_list.append(acc)
+        score = bootmodel.score(BX,By)
+        score_list.append(score)
     score_avg = stats.mean(score_list)
     score_list.sort()
     score_ub = numpy.percentile(score_list,97.5)
