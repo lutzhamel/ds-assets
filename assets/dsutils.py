@@ -6,6 +6,8 @@ A collection of utility functions for sklearn models.
 
 import os
 import subprocess
+
+import sklearn.utils
 if 'google.colab' in os.sys.modules:
   subprocess.run(['pip3','install','PyMySQL'])
 
@@ -129,17 +131,9 @@ def bootstrap_score(model, X, y, s=200, as_string=False):
     Returns
         (score, lower bound, upper bound) 
     '''
-    X = pd.DataFrame(X)
-    y = pd.DataFrame(y)
-    D = pd.concat([X,y], axis=1)
     score_list = []
     for i in range(s):
-        B = D.sample(n=X.shape[0],
-                     axis=0,
-                     replace=True,
-                     )
-        BX = B.drop(columns=y.columns)
-        By = B[y.columns]
+        BX,By = sklearn.utils.resample(X,y)
         bootmodel = sklearn.base.clone(model).fit(BX, By)
         score = bootmodel.score(BX,By)
         score_list.append(score)
